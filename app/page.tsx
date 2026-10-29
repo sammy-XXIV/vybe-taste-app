@@ -38,6 +38,7 @@ export default function Home() {
   const [insights, setInsights] = useState<InsightGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"idle" | "artists" | "results">("idle");
+  const [activeTab, setActiveTab] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   const heroRef = useRef<HTMLElement>(null);
@@ -413,109 +414,119 @@ export default function Home() {
             </button>
           </header>
 
-          {/* Artists strip — horizontal scroll */}
-          {artists.length > 0 && (
-            <div style={{ padding: "16px 20px 0" }}>
-              <p style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "var(--color-muted-foreground)",
-                marginBottom: 10,
-              }}>Taste seeds</p>
+          {/* Tab bar */}
+          <div style={{
+            display: "flex",
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            borderBottom: "1px solid var(--color-border)",
+            background: "#000",
+            position: "sticky",
+            top: 53,
+            zIndex: 9,
+          }}>
+            {insights.map((group, i) => (
+              <button
+                key={group.type}
+                onClick={() => setActiveTab(i)}
+                style={{
+                  flexShrink: 0,
+                  padding: "12px 18px",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: activeTab === i ? "2px solid var(--color-accent)" : "2px solid transparent",
+                  color: activeTab === i ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: activeTab === i ? 600 : 400,
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                  transition: "color 150ms",
+                }}
+              >
+                {group.domain}
+              </button>
+            ))}
+          </div>
+
+          {/* Active tab content */}
+          {insights[activeTab] && (
+            <div style={{ padding: "20px 16px 100px" }}>
+              {/* Taste seeds */}
+              {artists.length > 0 && (
+                <div style={{
+                  display: "flex",
+                  gap: 6,
+                  overflowX: "auto",
+                  scrollbarWidth: "none",
+                  marginBottom: 20,
+                }}>
+                  {artists.map((a) => (
+                    <span key={a.id} style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "3px 9px 3px 3px",
+                      background: "var(--color-card)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                      color: "var(--color-muted-foreground)",
+                    }}>
+                      {a.images?.[2]?.url && (
+                        <img src={a.images[2].url} alt={a.name} width={16} height={16}
+                          style={{ borderRadius: "50%", objectFit: "cover" }} />
+                      )}
+                      {a.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Cards grid */}
               <div style={{
-                display: "flex",
-                gap: 8,
-                overflowX: "auto",
-                paddingBottom: 4,
-                scrollbarWidth: "none",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 12,
               }}>
-                {artists.map((a) => (
-                  <span key={a.id} style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                    padding: "4px 10px 4px 4px",
-                    background: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 20,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                  }}>
-                    {a.images?.[2]?.url && (
-                      <img src={a.images[2].url} alt={a.name} width={18} height={18}
-                        style={{ borderRadius: "50%", objectFit: "cover" }} />
+                {insights[activeTab].entities.slice(0, 8).map((e) => (
+                  <div
+                    key={e.entity_id}
+                    style={{
+                      background: "var(--color-card)",
+                      border: "1.5px solid var(--color-border)",
+                      borderRadius: 14,
+                      padding: "14px",
+                    }}
+                  >
+                    <p style={{
+                      fontWeight: 600,
+                      margin: "0 0 5px",
+                      fontSize: 13,
+                      lineHeight: 1.3,
+                    }}>{e.name}</p>
+                    {e.properties?.description && (
+                      <p style={{
+                        fontSize: 11,
+                        color: "var(--color-muted-foreground)",
+                        margin: 0,
+                        lineHeight: 1.45,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}>
+                        {e.properties.description}
+                      </p>
                     )}
-                    {a.name}
-                  </span>
+                  </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Insight groups — horizontal scroll cards */}
-          <div style={{ paddingBottom: 80 }}>
-            {insights.map((group) => (
-              <div key={group.type} style={{ marginTop: 32 }}>
-                <h2 style={{
-                  fontFamily: "var(--font-bebas), sans-serif",
-                  fontSize: 18,
-                  fontWeight: 400,
-                  letterSpacing: "0.1em",
-                  color: "var(--color-accent)",
-                  margin: "0 0 12px 20px",
-                }}>
-                  {group.domain}
-                </h2>
-                <div style={{
-                  display: "flex",
-                  gap: 12,
-                  overflowX: "auto",
-                  padding: "4px 20px 12px",
-                  scrollbarWidth: "none",
-                }}>
-                  {group.entities.slice(0, 8).map((e) => (
-                    <div
-                      key={e.entity_id}
-                      style={{
-                        background: "var(--color-card)",
-                        border: "1.5px solid var(--color-border)",
-                        borderRadius: 14,
-                        padding: "16px 16px",
-                        minWidth: 200,
-                        maxWidth: 200,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <p style={{
-                        fontWeight: 600,
-                        margin: "0 0 6px",
-                        fontSize: 14,
-                        lineHeight: 1.3,
-                      }}>{e.name}</p>
-                      {e.properties?.description && (
-                        <p style={{
-                          fontSize: 12,
-                          color: "var(--color-muted-foreground)",
-                          margin: 0,
-                          lineHeight: 1.45,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}>
-                          {e.properties.description}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
 
           <footer style={{
             textAlign: "center",
