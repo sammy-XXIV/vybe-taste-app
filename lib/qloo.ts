@@ -43,7 +43,7 @@ const headers = { "X-Api-Key": KEY };
 
 export async function searchEntity(query: string, type?: string): Promise<QlooEntity[]> {
   const params = new URLSearchParams({ query, limit: "5" });
-  if (type) params.set("types", type.replace("urn:entity:", ""));
+  if (type) params.set("type", type.startsWith("urn:") ? type : `urn:entity:${type}`);
   const res = await fetch(`${BASE}/search?${params}`, { headers });
   if (!res.ok) return [];
   const data = await res.json();
