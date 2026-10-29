@@ -375,92 +375,78 @@ export default function Home() {
       {phase === "results" && !loading && (
         <>
           <header style={{
-            padding: "18px 32px",
+            padding: "14px 20px",
             borderBottom: "1px solid var(--color-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             position: "sticky",
             top: 0,
-            background: "rgba(0,0,0,0.85)",
-            backdropFilter: "blur(12px)",
+            background: "rgba(0,0,0,0.9)",
+            backdropFilter: "blur(16px)",
             zIndex: 10,
           }}>
             <span style={{
               fontFamily: "var(--font-bebas), sans-serif",
-              fontSize: 26,
-              display: "flex", alignItems: "center", gap: 8,
+              fontSize: 24,
+              display: "flex", alignItems: "center", gap: 6,
               letterSpacing: "0.05em",
+              whiteSpace: "nowrap",
             }}>
-              <VybeLogo size={28} />VYBE
-              <span style={{
-                marginLeft: 8,
-                fontSize: 11,
-                fontFamily: "Inter, sans-serif",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--color-accent)",
-                verticalAlign: "middle",
-              }}>Taste AI</span>
+              <VybeLogo size={24} />VYBE
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{ fontSize: 13, color: "var(--color-muted-foreground)" }}>
-                {artists.length} top artists mapped
-              </span>
-              <button
-                onClick={reset}
-                style={{
-                  padding: "6px 14px",
-                  background: "transparent",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 8,
-                  color: "var(--color-muted-foreground)",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontFamily: "inherit",
-                  transition: "border-color 150ms, color 150ms",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "var(--color-accent)";
-                  e.currentTarget.style.color = "var(--color-foreground)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--color-border)";
-                  e.currentTarget.style.color = "var(--color-muted-foreground)";
-                }}
-              >
-                Reconnect
-              </button>
-            </div>
+            <button
+              onClick={reset}
+              style={{
+                padding: "6px 14px",
+                background: "transparent",
+                border: "1px solid var(--color-border)",
+                borderRadius: 20,
+                color: "var(--color-muted-foreground)",
+                cursor: "pointer",
+                fontSize: 12,
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ↩ Reset
+            </button>
           </header>
 
-          {/* Artists strip */}
+          {/* Artists strip — horizontal scroll */}
           {artists.length > 0 && (
-            <div style={{ padding: "24px 32px 0" }}>
+            <div style={{ padding: "16px 20px 0" }}>
               <p style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: "0.1em",
+                letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 color: "var(--color-muted-foreground)",
-                marginBottom: 12,
-              }}>Your taste seeds</p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                marginBottom: 10,
+              }}>Taste seeds</p>
+              <div style={{
+                display: "flex",
+                gap: 8,
+                overflowX: "auto",
+                paddingBottom: 4,
+                scrollbarWidth: "none",
+              }}>
                 {artists.map((a) => (
                   <span key={a.id} style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 6,
-                    padding: "5px 12px 5px 5px",
+                    gap: 5,
+                    padding: "4px 10px 4px 4px",
                     background: "var(--color-card)",
                     border: "1px solid var(--color-border)",
                     borderRadius: 20,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 500,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}>
                     {a.images?.[2]?.url && (
-                      <img src={a.images[2].url} alt={a.name} width={20} height={20}
+                      <img src={a.images[2].url} alt={a.name} width={18} height={18}
                         style={{ borderRadius: "50%", objectFit: "cover" }} />
                     )}
                     {a.name}
@@ -470,55 +456,54 @@ export default function Home() {
             </div>
           )}
 
-          {/* Insight groups */}
-          <div style={{ padding: "32px 32px 80px" }}>
+          {/* Insight groups — horizontal scroll cards */}
+          <div style={{ paddingBottom: 80 }}>
             {insights.map((group) => (
-              <div key={group.type} style={{ marginBottom: 48 }}>
+              <div key={group.type} style={{ marginTop: 32 }}>
                 <h2 style={{
                   fontFamily: "var(--font-bebas), sans-serif",
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: 400,
-                  letterSpacing: "0.08em",
+                  letterSpacing: "0.1em",
                   color: "var(--color-accent)",
-                  marginBottom: 16,
+                  margin: "0 0 12px 20px",
                 }}>
                   {group.domain}
                 </h2>
                 <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-                  gap: 16,
+                  display: "flex",
+                  gap: 12,
+                  overflowX: "auto",
+                  padding: "4px 20px 12px",
+                  scrollbarWidth: "none",
                 }}>
                   {group.entities.slice(0, 8).map((e) => (
                     <div
                       key={e.entity_id}
                       style={{
                         background: "var(--color-card)",
-                        border: "2px solid var(--color-border)",
-                        borderRadius: 12,
-                        padding: 20,
-                        transition: "border-color 200ms, transform 150ms, box-shadow 200ms",
-                      }}
-                      onMouseEnter={(el) => {
-                        el.currentTarget.style.borderColor = "var(--color-accent)";
-                        el.currentTarget.style.transform = "translateY(-3px)";
-                        el.currentTarget.style.boxShadow = "0 8px 24px rgba(225,29,72,0.12)";
-                      }}
-                      onMouseLeave={(el) => {
-                        el.currentTarget.style.borderColor = "var(--color-border)";
-                        el.currentTarget.style.transform = "translateY(0)";
-                        el.currentTarget.style.boxShadow = "none";
+                        border: "1.5px solid var(--color-border)",
+                        borderRadius: 14,
+                        padding: "16px 16px",
+                        minWidth: 200,
+                        maxWidth: 200,
+                        flexShrink: 0,
                       }}
                     >
-                      <p style={{ fontWeight: 600, margin: "0 0 6px", fontSize: 15 }}>{e.name}</p>
+                      <p style={{
+                        fontWeight: 600,
+                        margin: "0 0 6px",
+                        fontSize: 14,
+                        lineHeight: 1.3,
+                      }}>{e.name}</p>
                       {e.properties?.description && (
                         <p style={{
-                          fontSize: 13,
+                          fontSize: 12,
                           color: "var(--color-muted-foreground)",
                           margin: 0,
-                          lineHeight: 1.4,
+                          lineHeight: 1.45,
                           display: "-webkit-box",
-                          WebkitLineClamp: 2,
+                          WebkitLineClamp: 3,
                           WebkitBoxOrient: "vertical",
                           overflow: "hidden",
                         }}>
