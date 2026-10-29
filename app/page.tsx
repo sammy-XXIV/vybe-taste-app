@@ -119,7 +119,7 @@ export default function Home() {
       })
     );
 
-    if (!entityIds.length) { setLoading(false); return; }
+    if (!entityIds.length) { setLoading(false); setPhase("idle"); return; }
 
     const insightsRes = await fetch("/api/insights", {
       method: "POST",
@@ -141,7 +141,7 @@ export default function Home() {
     setPhase("artists");
 
     const artistsRes = await fetch("/api/spotify/top-artists");
-    if (!artistsRes.ok) { setLoading(false); return; }
+    if (!artistsRes.ok) { setLoading(false); setPhase("idle"); return; }
     const spotifyArtists: SpotifyArtist[] = await artistsRes.json();
     setArtists(spotifyArtists);
 
@@ -154,7 +154,7 @@ export default function Home() {
       })
     );
 
-    if (!entityIds.length) { setLoading(false); return; }
+    if (!entityIds.length) { setLoading(false); setPhase("idle"); return; }
 
     const insightsRes = await fetch("/api/insights", {
       method: "POST",
@@ -319,10 +319,12 @@ export default function Home() {
               fontSize: 13,
               position: "relative",
               zIndex: 1,
+              flexWrap: "wrap",
+              justifyContent: "center",
+              whiteSpace: "nowrap",
             }}
           >
-            <span>Powered by</span>
-            <span style={{ color: "var(--color-foreground)", fontWeight: 600 }}>Qloo Taste AI</span>
+            <span>Powered by <span style={{ color: "var(--color-foreground)", fontWeight: 600 }}>Qloo Taste AI</span></span>
             <span style={{
               width: 4, height: 4, borderRadius: "50%",
               background: "var(--color-muted-foreground)",
@@ -334,7 +336,7 @@ export default function Home() {
       )}
 
       {/* ─── LOADING ─── */}
-      {(loading || !mounted) && phase !== "results" && (
+      {(loading || !mounted || phase === "artists") && phase !== "results" && (
         <section style={{
           minHeight: "100vh",
           display: "flex",
