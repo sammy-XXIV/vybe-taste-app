@@ -467,8 +467,8 @@ export default function Home() {
                       alignItems: "center",
                       gap: 4,
                       padding: "3px 9px 3px 3px",
-                      background: "var(--color-card)",
-                      border: "1px solid var(--color-border)",
+                      background: "#111",
+                      border: "none",
                       borderRadius: 20,
                       fontSize: 11,
                       fontWeight: 500,
@@ -496,8 +496,8 @@ export default function Home() {
                   <div
                     key={e.entity_id}
                     style={{
-                      background: "var(--color-card)",
-                      border: "1.5px solid var(--color-border)",
+                      background: "#111",
+                      border: "none",
                       borderRadius: 14,
                       padding: "14px",
                     }}
