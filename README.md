@@ -15,8 +15,9 @@ Built for the **Qloo Agentic Hackathon 2026**.
 2. App fetches top 10 artists from Spotify API
 3. Top 5 artists are resolved to Qloo entity IDs via `/search`
 4. Qloo `/v2/insights` runs in parallel for 7 output domains
-5. Results render as cards grouped by domain
-6. Cache written to `localStorage` — instant load on return visits
+5. Results render as cards grouped by domain — click **+ Add to taste** on any card to add it as a signal and refine recommendations live
+6. Click **✦ Plan Weekend** to synthesize your matched Travel city, dining spots, films, TV, books, games, and brands into a 48-hour cultural itinerary via `/api/plan`
+7. Cache written to `localStorage` — instant load on return visits
 
 ### Demo Mode
 Append `?demo=1` to skip Spotify auth. Seeds with: Kendrick Lamar, Frank Ocean, Tyler The Creator, SZA, Travis Scott — calls real Qloo API.
@@ -53,6 +54,7 @@ app/
     ├── auth/[...nextauth]/route.ts # NextAuth catch-all handler
     ├── search/route.ts             # GET — proxies Qloo /search
     ├── insights/route.ts           # POST — parallel Qloo /v2/insights per domain
+    ├── plan/route.ts               # POST — 48-hour cultural itinerary from Qloo matches
     └── spotify/top-artists/route.ts# GET — Spotify /me/top/artists?limit=10
 
 lib/
@@ -85,7 +87,7 @@ Output domains queried in parallel:
 - `urn:entity:tv_show` — TV shows
 - `urn:entity:brand` — Brands
 - `urn:entity:book` — Books
-- `urn:entity:video_game` — Games
+- `urn:entity:videogame` — Games
 
 ---
 

@@ -14,7 +14,7 @@ const OUTPUT_TYPES: EntityType[] = [
   "urn:entity:tv_show",
   "urn:entity:brand",
   "urn:entity:book",
-  "urn:entity:video_game",
+  "urn:entity:videogame",
 ];
 
 interface InsightGroup {
@@ -35,8 +35,13 @@ const STORAGE_KEY = "vybe_insights_cache";
 export default function Home() {
   const { data: session, status } = useSession();
   const [artists, setArtists] = useState<SpotifyArtist[]>([]);
+  const [seedIds, setSeedIds] = useState<string[]>([]);
   const [insights, setInsights] = useState<InsightGroup[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refiningId, setRefiningId] = useState<string | null>(null);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planText, setPlanText] = useState<string>("");
+  const [planLoading, setPlanLoading] = useState(false);
   const [phase, setPhase] = useState<"idle" | "artists" | "results">("idle");
   const [activeTab, setActiveTab] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -80,9 +85,10 @@ export default function Home() {
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) {
-        const { insights: ci, artists: ca } = JSON.parse(cached);
+        const { insights: ci, artists: ca, seedIds: cs } = JSON.parse(cached);
         setInsights(ci);
         setArtists(ca);
+        if (cs) setSeedIds(cs);
         setPhase("results");
       }
     } catch {}
@@ -115,7 +121,7 @@ export default function Home() {
     const FALLBACK_IDS = [
       "C915A918-39C5-47A3-A101-D9FA1DECBD9C", // Kendrick Lamar
       "8CA2E4E6-D8AB-4A73-97C9-3FCC8F9BB3E8", // Frank Ocean
-      "B5B9A7E4-3A1B-4E5C-9F6D-2A8C7E1B4D5F", // Tyler The Creator
+      "375758AA-B0FA-4508-8EC1-D7FBFE3A4B3C", // Tyler, the Creator
     ];
     const entityIds: string[] = [...FALLBACK_IDS];
     try {
@@ -139,10 +145,11 @@ export default function Home() {
     });
     const data: InsightGroup[] = await insightsRes.json();
     setInsights(data);
+    setSeedIds(entityIds);
     setPhase("results");
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ insights: data, artists: demoArtists }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ insights: data, artists: demoArtists, seedIds: entityIds }));
     } catch {}
     setLoading(false);
   }
@@ -174,18 +181,70 @@ export default function Home() {
     });
     const data: InsightGroup[] = await insightsRes.json();
     setInsights(data);
+    setSeedIds(entityIds);
     setPhase("results");
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ insights: data, artists: spotifyArtists }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ insights: data, artists: spotifyArtists, seedIds: entityIds }));
     } catch {}
 
     setLoading(false);
   }
 
+  async function refineWithEntity(entity: QlooEntity) {
+    if (seedIds.includes(entity.entity_id) || refiningId) return;
+    setRefiningId(entity.entity_id);
+    const nextIds = [...seedIds, entity.entity_id];
+    const nextArtists: SpotifyArtist[] = [
+      ...artists,
+      { id: entity.entity_id, name: entity.name, images: [], genres: [] },
+    ];
+    setSeedIds(nextIds);
+    setArtists(nextArtists);
+    setPlanText("");
+    try {
+      const insightsRes = await fetch("/api/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityIds: nextIds, outputTypes: OUTPUT_TYPES }),
+      });
+      const data: InsightGroup[] = await insightsRes.json();
+      if (data.length) {
+        setInsights(data);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ insights: data, artists: nextArtists, seedIds: nextIds }));
+      }
+    } catch {}
+    setRefiningId(null);
+  }
+
+  async function openWeekendPlan() {
+    setPlanOpen(true);
+    if (planText || planLoading) return;
+    setPlanLoading(true);
+    try {
+      const domains: Record<string, string[]> = {};
+      insights.forEach((g) => {
+        domains[g.domain] = g.entities.slice(0, 4).map((e) => e.name);
+      });
+      const res = await fetch("/api/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ artists: artists.map((a) => a.name), domains }),
+      });
+      const data = await res.json();
+      setPlanText(data.plan || "");
+    } catch {
+      setPlanText("Could not generate plan right now.");
+    }
+    setPlanLoading(false);
+  }
+
   function reset() {
     setInsights([]);
     setArtists([]);
+    setSeedIds([]);
+    setPlanText("");
+    setPlanOpen(false);
     setPhase("idle");
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     signOut({ redirect: false });
@@ -396,22 +455,41 @@ export default function Home() {
             }}>
               <VybeLogo size={24} />VYBE
             </span>
-            <button
-              onClick={reset}
-              style={{
-                padding: "6px 14px",
-                background: "transparent",
-                border: "1px solid var(--color-border)",
-                borderRadius: 20,
-                color: "var(--color-muted-foreground)",
-                cursor: "pointer",
-                fontSize: 12,
-                fontFamily: "inherit",
-                whiteSpace: "nowrap",
-              }}
-            >
-              ↩ Reset
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={openWeekendPlan}
+                style={{
+                  padding: "6px 14px",
+                  background: "var(--color-accent)",
+                  border: "none",
+                  borderRadius: 20,
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ✦ Plan Weekend
+              </button>
+              <button
+                onClick={reset}
+                style={{
+                  padding: "6px 14px",
+                  background: "transparent",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: 20,
+                  color: "var(--color-muted-foreground)",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ↩ Reset
+              </button>
+            </div>
           </header>
 
           {/* Tab bar */}
@@ -492,38 +570,129 @@ export default function Home() {
                 gridTemplateColumns: "1fr 1fr",
                 gap: 12,
               }}>
-                {insights[activeTab].entities.slice(0, 8).map((e) => (
-                  <div
-                    key={e.entity_id}
+                {insights[activeTab].entities.slice(0, 8).map((e) => {
+                  const inTaste = seedIds.includes(e.entity_id);
+                  const isRefining = refiningId === e.entity_id;
+                  return (
+                    <div
+                      key={e.entity_id}
+                      style={{
+                        background: "#111",
+                        border: "none",
+                        borderRadius: 14,
+                        padding: "14px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        gap: 10,
+                      }}
+                    >
+                      <div>
+                        <p style={{
+                          fontWeight: 600,
+                          margin: "0 0 5px",
+                          fontSize: 13,
+                          lineHeight: 1.3,
+                        }}>{e.name}</p>
+                        {e.properties?.description && (
+                          <p style={{
+                            fontSize: 11,
+                            color: "var(--color-muted-foreground)",
+                            margin: 0,
+                            lineHeight: 1.45,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}>
+                            {e.properties.description}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => refineWithEntity(e)}
+                        disabled={inTaste || !!refiningId}
+                        style={{
+                          alignSelf: "flex-start",
+                          padding: "4px 10px",
+                          background: inTaste ? "rgba(225,29,72,0.16)" : "#1a1a1a",
+                          border: "none",
+                          borderRadius: 12,
+                          color: inTaste ? "var(--color-accent)" : "var(--color-muted-foreground)",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          fontFamily: "inherit",
+                          cursor: inTaste ? "default" : "pointer",
+                        }}
+                      >
+                        {isRefining ? "Refining…" : inTaste ? "✓ In taste" : "+ Add to taste"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {planOpen && (
+            <div
+              onClick={() => setPlanOpen(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.82)",
+                backdropFilter: "blur(8px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 20,
+                zIndex: 50,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "100%",
+                  maxWidth: 460,
+                  background: "#0d0d0d",
+                  border: "2px solid var(--color-accent)",
+                  borderRadius: 18,
+                  padding: 22,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <span style={{ fontFamily: "var(--font-bebas), sans-serif", fontSize: 26, letterSpacing: "0.04em" }}>
+                    ✦ YOUR 48-HOUR CULTURAL PLAN
+                  </span>
+                  <button
+                    onClick={() => setPlanOpen(false)}
                     style={{
-                      background: "#111",
+                      background: "transparent",
                       border: "none",
-                      borderRadius: 14,
-                      padding: "14px",
+                      color: "var(--color-muted-foreground)",
+                      fontSize: 18,
+                      cursor: "pointer",
                     }}
                   >
-                    <p style={{
-                      fontWeight: 600,
-                      margin: "0 0 5px",
-                      fontSize: 13,
-                      lineHeight: 1.3,
-                    }}>{e.name}</p>
-                    {e.properties?.description && (
-                      <p style={{
-                        fontSize: 11,
-                        color: "var(--color-muted-foreground)",
-                        margin: 0,
-                        lineHeight: 1.45,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}>
-                        {e.properties.description}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                    ✕
+                  </button>
+                </div>
+                {planLoading ? (
+                  <p style={{ color: "var(--color-muted-foreground)", fontSize: 13, padding: "20px 0" }}>
+                    Building your weekend across Qloo domains…
+                  </p>
+                ) : (
+                  <pre style={{
+                    whiteSpace: "pre-wrap",
+                    fontFamily: "inherit",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    color: "var(--color-foreground)",
+                    margin: 0,
+                  }}>
+                    {planText}
+                  </pre>
+                )}
               </div>
             </div>
           )}

@@ -9,7 +9,7 @@ const ENTITY_TYPES = [
   "urn:entity:destination",
   "urn:entity:brand",
   "urn:entity:book",
-  "urn:entity:video_game",
+  "urn:entity:videogame",
   "urn:entity:podcast",
 ] as const;
 
@@ -23,7 +23,7 @@ export const DOMAIN_LABELS: Record<EntityType, string> = {
   "urn:entity:destination": "Travel",
   "urn:entity:brand": "Brands",
   "urn:entity:book": "Books",
-  "urn:entity:video_game": "Video Games",
+  "urn:entity:videogame": "Video Games",
   "urn:entity:podcast": "Podcasts",
 };
 
@@ -55,6 +55,8 @@ export async function searchEntity(query: string, type?: string): Promise<QlooEn
   }));
 }
 
+const EXCLUDE_NAMES = /moe's tavern|lard lad|krusty burger|shit is fucked/i;
+
 export async function getInsights(
   signalEntityIds: string[],
   outputType: EntityType,
@@ -62,8 +64,12 @@ export async function getInsights(
 ): Promise<QlooEntity[]> {
   const params = new URLSearchParams({
     "filter.type": outputType,
-    limit: String(limit),
+    limit: String(limit + 6),
   });
+  if (outputType === "urn:entity:place") {
+    params.set("filter.location.query", "Los Angeles");
+    params.set("filter.tags", "urn:tag:genre:place:restaurant");
+  }
   signalEntityIds.forEach((id) => params.append("signal.interests.entities", id));
 
   const res = await fetch(`${BASE}/v2/insights?${params}`, { headers });
@@ -72,5 +78,6 @@ export async function getInsights(
     return [];
   }
   const data = await res.json();
-  return data.results?.entities ?? data.entities ?? [];
+  const entities: QlooEntity[] = data.results?.entities ?? data.entities ?? [];
+  return entities.filter((e) => !EXCLUDE_NAMES.test(e.name)).slice(0, limit);
 }
