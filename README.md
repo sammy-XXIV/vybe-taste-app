@@ -13,7 +13,7 @@ Built for the **Qloo Agentic Hackathon 2026**.
 
 1. User connects Spotify via OAuth (`user-top-read` scope)
 2. App fetches top 10 artists from Spotify API
-3. Each artist is resolved to a Qloo entity ID via `/search`
+3. Top 5 artists are resolved to Qloo entity IDs via `/search`
 4. Qloo `/v2/insights` runs in parallel for 7 output domains
 5. Results render as cards grouped by domain
 6. Cache written to `localStorage` — instant load on return visits
@@ -27,8 +27,8 @@ Append `?demo=1` to skip Spotify auth. Seeds with: Kendrick Lamar, Frank Ocean, 
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 15 App Router (TypeScript) |
-| Auth | NextAuth.js v5 + SpotifyProvider |
+| Framework | Next.js 16 App Router (TypeScript) |
+| Auth | NextAuth.js v4 + SpotifyProvider |
 | Taste API | Qloo Taste AI (`hackathon.api.qloo.com`) |
 | Animation | GSAP 3 (wave / glitch / reveal) |
 | Fonts | Bebas Neue + Inter via `next/font/google` |
@@ -68,17 +68,13 @@ design-system/vybe/MASTER.md        # Persisted UI/UX design system
 
 ### Search (entity resolution)
 ```
-GET /search?q=Kendrick+Lamar&type=artist
-→ { entity_id, name, types[], ... }[]
+GET /search?query=Kendrick+Lamar&type=urn:entity:artist&limit=5
+→ { results: { entity_id, name, types[], ... }[] }
 ```
 
 ### Insights (cross-domain recommendations)
 ```
-POST /v2/insights
-{
-  "filter.type": "urn:entity:place",
-  "signal.interests.entities": "qloo:entity:xxx,qloo:entity:yyy"
-}
+GET /v2/insights?filter.type=urn:entity:place&limit=8&signal.interests.entities=<entity_id_1>&signal.interests.entities=<entity_id_2>
 → { results: { entities: { entity_id, name, properties }[] } }
 ```
 
@@ -179,7 +175,7 @@ Results stored in `localStorage` under key `vybe_insights_cache`:
 }
 ```
 On load, if cache exists → jump straight to results phase, skip Spotify + Qloo calls.
-"Reconnect" button clears cache + signs out.
+"Reset" button clears cache + signs out.
 
 ---
 
